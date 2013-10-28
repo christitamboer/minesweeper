@@ -1,4 +1,5 @@
 require "debugger"
+require "yaml"
 require "./square"
 require "./prompt"
 
@@ -7,6 +8,35 @@ class Minesweeper
   def initialize
     @board = nil
     @game_over = false
+  end
+
+  def save_game
+    board_yaml = @board.to_yaml
+
+    file_name = prompt("Enter file name: ", "Invalid file name!\n") do |input|
+      input =~ /^\w+$/
+    end
+
+    file_name = "saves/#{file_name}.savefile"
+
+    f = File.open(file_name, 'w')
+    f.print board_yaml
+    f.close
+    puts "Game is saved"
+  end
+
+  def load_game
+    file_name = prompt("Enter file name: ", "Invalid file name!\n") do |input|
+      input =~ /^\w+$/
+    end
+    file_name = "saves/#{file_name}.savefile"
+
+    contents = File.read(file_name)
+
+    @board = YAML::load(contents)
+    puts "Game loaded"
+
+    display_board
   end
 
   def get_board
@@ -33,7 +63,6 @@ class Minesweeper
       # Is separated by spaces
       is_valid = input.split(' ').count == 3
 
-
       cmd, row, col = input.split(' ')
       # Is a valid command
       is_valid &&= cmd.downcase == 'r' || cmd.downcase == 'f'
@@ -42,8 +71,8 @@ class Minesweeper
       is_valid &&= row.to_i.between?(0, @board.length - 1)
       is_valid &&= col.to_i.between?(0, @board[0].length - 1)
 
-
-      is_valid = true if input == "quit"
+      # Or it is quit
+      is_valid ||= input == "quit" || "save" || "load"
     end
   end
 
@@ -58,6 +87,11 @@ class Minesweeper
     until @game_over
       command_str = get_command
       return if command_str == "quit"
+      save_game if command_str == "save"
+      if command_str == "load"
+        load_game
+        next
+      end
 
       cmd, row, col = command_str.split(' ')
       row = row.to_i
@@ -74,6 +108,8 @@ class Minesweeper
 
     # Show revealed
     display_board(true)
+
+
 
   end
 
@@ -99,7 +135,7 @@ class Minesweeper
 
   def update_board(cmd, row, col)
     square = @board[row][col]
-    @game_over = true if cmd == 'r' && square.has_mine
+    @game_over = true if cmd == 'r' && square.has_mine && !square.is_flagged
 
     square.update(cmd)
   end
