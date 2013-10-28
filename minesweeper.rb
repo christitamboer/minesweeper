@@ -1,4 +1,7 @@
 require "debugger"
+require "./square"
+require "./player"
+require "./prompt"
 
 class Minesweeper
 
@@ -7,6 +10,39 @@ class Minesweeper
   end
 
   def play
+    print "Enter your name: "
+    name = gets.chomp
+
+    print "Enter board size: small (9x9) or medium (16x16): "
+    board_size = gets.chomp.downcase
+
+    case board_size
+    when "small"
+      @board = make_board(9, 9, 10)
+    when "medium"
+      @board = make_board(16, 16, 40)
+    else
+      puts "Invalid choice, setting to small. "
+      @board = make_board(9, 9, 10)
+    end
+
+    game_over = false
+    until game_over
+      prompt_msg = "Enter row and col (e.g. 0 2): "
+      error_msg = "Invalid position\n"
+      pos_str = prompt(prompt_msg, error_msg) do |input|
+        # Is separated by a space
+        is_valid = input.split(' ').count == 2
+
+        # Is in range
+        row, col = input.split(' ')
+        is_valid &&= row.to_i.between?(0, @board.length-1)
+        is_valid &&= col.to_i.between?(0, @board[0].length-1)
+      end
+
+      row, col = pos_str.split(' ').map(&:to_i)
+    end
+
   end
 
   def display_board
@@ -72,34 +108,7 @@ class Minesweeper
   end
 end
 
-class Square
-  attr_accessor :adjacent_mines, :is_flagged, :has_mine, :is_unexplored,
-                :adjacent_squares
 
-  def initialize
-    @adjacent_mines = 0
-    @is_flagged = false
-    @has_mine = false
-    @is_unexplored = true
-    @adjacent_squares = []
-  end
-
-  def display_symbol
-    if @is_flagged # Flagged
-      return 'F'
-    elsif @is_unexplored # Not flagged, unexplored
-      return '?'
-    elsif @has_mine # Not flagged, explored, has_mine (Game over!)
-      return '*'
-    else
-      if @adjacent_mines == 0 # not flagged, explored, not near any mines
-        return '_'
-      else
-        return @adjacent_mines.to_s # Not flagged, explored, near >= 1 mines
-      end
-    end
-  end
-end
 
 game = Minesweeper.new
-board = game.make_board(9,9,10)
+game.play
