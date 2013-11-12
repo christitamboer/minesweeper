@@ -16,12 +16,12 @@ class Minesweeper
     file_name = prompt("Enter file name: ", "Invalid file name!\n") do |input|
       input =~ /^\w+$/
     end
-
-    file_name = "saves/#{file_name}.savefile"
+    file_name = "saves/#{file_name}.yaml"
 
     f = File.open(file_name, 'w')
     f.print board_yaml
     f.close
+
     puts "Game is saved"
   end
 
@@ -29,11 +29,11 @@ class Minesweeper
     file_name = prompt("Enter file name: ", "Invalid file name!\n") do |input|
       input =~ /^\w+$/
     end
-    file_name = "saves/#{file_name}.savefile"
+    file_name = "saves/#{file_name}.yaml"
 
     contents = File.read(file_name)
-
     @board = YAML::load(contents)
+
     puts "Game loaded"
 
     display_board
@@ -71,7 +71,7 @@ class Minesweeper
       is_valid &&= row.to_i.between?(0, @board.length - 1)
       is_valid &&= col.to_i.between?(0, @board[0].length - 1)
 
-      # Or it is quit
+      # Or it is quit/save/load
       is_valid ||= input == "quit" || "save" || "load"
     end
   end
@@ -86,13 +86,18 @@ class Minesweeper
 
     until @game_over
       command_str = get_command
+
+      # Handle quit/save/load commands
       return if command_str == "quit"
+
       save_game if command_str == "save"
+
       if command_str == "load"
         load_game
         next
       end
 
+      # Otherwise it's a move
       cmd, row, col = command_str.split(' ')
       row = row.to_i
       col = col.to_i
@@ -109,8 +114,6 @@ class Minesweeper
     # Show revealed
     display_board(true)
 
-
-
   end
 
   def check_win
@@ -118,6 +121,7 @@ class Minesweeper
 
     num_flagged = 0
     num_mines = 0
+
     @board.flatten.each do |square|
       won &&= (square.is_revealed || square.is_flagged)
       num_flagged += 1 if square.is_flagged
@@ -172,7 +176,7 @@ class Minesweeper
     until mine_positions.length == mines
       row = rand(board.length)
       col = rand(board[0].length)
-      mine_positions << [row, col] if !mine_positions.include?([row, col])
+      mine_positions << [row, col] unless mine_positions.include?([row, col])
     end
 
     # For each mine
@@ -182,7 +186,6 @@ class Minesweeper
       board[row][col].has_mine = true
 
       # Increment number of adjacent mines counter on adjacent squares
-
       board[row][col].adjacent_squares.each do |adj_square|
        adj_square.adjacent_mines += 1
       end
@@ -195,7 +198,7 @@ class Minesweeper
     # Create empty board
     board = Array.new(rows) { Array.new(cols) { Square.new } }
 
-    # Set each squares adjacent squares list
+    # Set each square's adjacent squares list
     board.each_with_index do |row, row_idx|
       row.each_index do |col_idx|
         adjacent_positions([row_idx, col_idx], rows, cols).each do |adj_pos|

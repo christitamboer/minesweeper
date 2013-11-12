@@ -28,7 +28,7 @@ class Square
 
   def update(cmd)
     if cmd == 'f' # Flag
-      self.is_flagged = !self.is_flagged
+      self.is_flagged = !self.is_flagged # toggle flag
     else # Reveal
       unless self.is_flagged
         self.is_revealed = true
@@ -38,8 +38,10 @@ class Square
   end
 
   def reveal_blanks(blank_squares)
+    # base case
     return unless @adjacent_mines == 0 || @is_flagged
 
+    # recursively reveal blank squares
     blank_squares += [self]
     @adjacent_squares.each do |adj_square|
       adj_square.is_revealed = true
